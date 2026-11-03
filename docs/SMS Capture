@@ -1,0 +1,48 @@
+# PennyWise SMS Capture Architecture
+
+## Product decisions
+- Android first; local cache plus cloud sync; user reviews every detected transaction.
+- Initial scope: financial transaction alerts only. Never collect OTPs, authentication codes, PINs or passwords.
+
+## Components
+1. Android companion (Kotlin): explicit opt-in, policy-compliant capture, local parsing and pending queue.
+2. API (Python/Flask): authentication, device registration, transaction ingestion, idempotency and sync.
+3. Database: SQLite for local development; managed PostgreSQL or equivalent for a multi-user hosted service.
+4. Web app: pending inbox, review/confirm/dismiss actions and sync status.
+5. Local cache: offline display and queue; cloud is cross-device source of truth.
+
+## Lifecycle
+`detected -> pending_review -> confirmed -> synced`
+Other states: `dismissed`, `duplicate`, `parse_failed`.
+
+## Suggested payload
+- `client_transaction_id` UUID
+- `amount_minor` integer paise (avoid floating point)
+- `currency` ISO 4217 (INR default)
+- `direction` debit/credit
+- `payment_method` UPI/card/bank_transfer/unknown
+- `merchant_hint` optional
+- `occurred_at` ISO 8601 with timezone
+- `bank_reference` optional
+- `source` android_sms
+- `status` pending_review
+
+Do not upload the original SMS body by default. Parse on-device and send only minimum transaction fields. Enforce uniqueness on `(user_id, client_transaction_id)` and, when available, `(user_id, bank_reference)`.
+
+## Security and consent
+- Explicit opt-in and clear explanation before requesting any SMS permission.
+- Filter transaction alerts only; never process OTP/authentication messages.
+- Store tokens using Android Keystore-backed storage.
+- TLS, rate limits, audit logs, pause/disconnect/export/deletion controls.
+- Never collect bank credentials, card PINs, CVVs or UPI PINs.
+
+## Distribution constraint
+Android SMS access is sensitive and Google Play restricts SMS permissions to eligible use cases. Verify current policy and eligibility before building or publishing a listener. GitHub Pages cannot access the device SMS inbox.
+
+## Implementation stages
+1. Web inbox and manual paste parser (current prototype).
+2. Parser fixtures and tests for common bank formats and false positives.
+3. Flask API with authenticated pending transaction ingestion.
+4. Android shell and opt-in onboarding.
+5. Confirm SMS permission eligibility before listener implementation.
+6. Device-to-cloud sync, deduplication, review and confirmation.
