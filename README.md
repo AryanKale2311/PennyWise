@@ -58,3 +58,15 @@ When we build the Python + Flask + SQLite version, SQLite will run on a server o
 ### Resetting first-time setup during testing
 
 To test the first-time setup again, open the browser developer tools → Application/Storage → Local Storage for your PennyWise site and remove the `pw_profile` key. Removing all site storage will also remove locally saved expenses and budgets, so export data first.
+
+
+## v0.3.0 — Custom Budget Cycles
+
+- Set a personal cycle reset day from 1 to 31 in Settings. Dates that do not exist in a shorter month use that month's final day.
+- The website checks for a due cycle rollover when it is opened.
+- Users can manually close a phase from Budgets; its transactions and phase totals are archived in Financial History.
+- Carry-forward is a per-browser preference. When enabled, the unused amount from the archived phase becomes the next phase budget; otherwise the configured base budget is reused.
+- On the first upgrade from the previous v0.2 website, existing transactions are moved into a one-time “Previous transactions” archive and the active phase starts clean, as requested.
+- Data remains in browser localStorage. This is not cloud sync: separate browsers/devices do not share profiles, budgets or transactions.
+
+To use the update, replace the website files in the existing GitHub Pages repository with the contents of this folder and commit/push the changes. Keep the same repository and URL.
